@@ -129,6 +129,19 @@ Some functionalities such as logging analytics require running the queue, but do
 php artisan queue:work
 ```  
 
+# Docker configuration
+
+The repository contains a DockerFile that can be used in the following commands:
+
+```bash
+docker build -t streaming-microservice .
+```
+
+followed by the following commands:
+
+```bash
+docker run -d -p 9000:9000 --name streaming-container streaming-microservice
+```
 
 <br>
 
