@@ -10,48 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 class EpisodeController extends BaseController
 {
     public function store(StoreEpisodeRequest $request)
     {
-        // $validatedData = $request->validated();
-
-        // $name = $validatedData['name'];
-        // $author = $validatedData['author'];
-
-        // if ($request->has('mp3_file')) {
-        //     // If the user uploaded an MP3 file
-        //     $uploadedFile = $validatedData['mp3_file'];
-        //     $filename = uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
-        //     // $localFilePath = storage_path('app/' . $filename);
-
-        //     // Move the uploaded file to local storage
-        //     $uploadedFile->move(storage_path('app'), $filename);
-
-        //     // Convert the local file path to a public URL
-        //     $publicUrl = url('storage/' . $filename);
-
-        // } elseif ($request->has('mp3_url')) {
-        //     // If the user provided an MP3 URL
-        //     $mp3Url = $validatedData['mp3_url'];
-        //     $filename = uniqid() . '.mp3';
-        //     // $localFilePath = storage_path('app/' . $filename);
-        //     // Convert the local file path to a public URL
-        //     $publicUrl = url('storage/' . $filename);
-
-        //     $response = Http::get($mp3Url);
-        //     if (!$response->successful()) {
-        //         return $this->responseJsonError('Failed to download MP3 file', null, 500);
-        //     }
-
-        //     // Save the downloaded file to local storage
-        //     Storage::put($filename, $response->body());
-        // } else {
-        //     return $this->responseJsonError('No MP3 file or URL provided', null, 400);
-        // }
-
         Episode::create($request->validated());
 
         return $this->responseJsonSuccess('Episode added successfully');
@@ -195,76 +160,124 @@ class EpisodeController extends BaseController
 
     }
 
+    // Additional backend functionalities that are not being used, but only for reviewing purposes
 
+    public function StoreEpisodeIntoLocalFiles(StoreEpisodeRequest $request)
+    {
+        $validatedData = $request->validated();
 
-    // public function streamEpisodeFromTheStorage(Request $request, Episode $episode)
-    // {
-    //     try {
-    //         // Check authentication using token in headers or signed URL
-    //         if (!$this->isAuthorized($request, $episode)) {
-    //             return $this->responseJsonError("Oops, this episode is not publicly available or the given signed URL is not valid", null, 401);
-    //         }
+        $name = $validatedData['name'];
+        $author = $validatedData['author'];
 
-    //         // Call analytics service to log the request
-    //         // $this->logAnalytics($episode);
+        if ($request->has('mp3_file')) {
+            // If the user uploaded an MP3 file
+            $uploadedFile = $validatedData['mp3_file'];
+            $filename = uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+            // $localFilePath = storage_path('app/' . $filename);
 
-    //         // Check if the file exists in the local cache
-    //         $cachedFilePath = storage_path('app/episode_' . $episode->id);
+            // Move the uploaded file to local storage
+            $uploadedFile->move(storage_path('app'), $filename);
 
-    //         if (!Storage::disk('local')->exists($cachedFilePath)) {
-    //             // Download the file from storage and cache it locally
-    //             $fileStream = Storage::disk('local')->get($episode->mp3_url);
-    //             Storage::disk('local')->put($cachedFilePath, $fileStream);
-    //         }
+            // Convert the local file path to a public URL
+            $publicUrl = url('storage/' . $filename);
 
-    //         $fileSize = Storage::disk('local')->size($cachedFilePath);
+        } elseif ($request->has('mp3_url')) {
+            // If the user provided an MP3 URL
+            $mp3Url = $validatedData['mp3_url'];
+            $filename = uniqid() . '.mp3';
+            // $localFilePath = storage_path('app/' . $filename);
+            // Convert the local file path to a public URL
+            $publicUrl = url('storage/' . $filename);
 
-    //         // Check if the request is for partial content
-    //         $range = $request->headers->get('Range');
-    //         if ($range) {
-    //             list($start, $end) = explode('-', substr($range, 6), 2);
+            $response = Http::get($mp3Url);
+            if (!$response->successful()) {
+                return $this->responseJsonError('Failed to download MP3 file', null, 500);
+            }
 
-    //             $start = intval($start);
-    //             $end = $end ? intval($end) : $fileSize - 1;
+            // Save the downloaded file to local storage
+            Storage::put($filename, $response->body());
+        } else {
+            return $this->responseJsonError('No MP3 file or URL provided', null, 400);
+        }
 
-    //             if ($start >= 0 && $start <= $end && $end < $fileSize) {
-    //                 $length = ($end - $start) + 1;
+        Episode::create([
+            'mp3_url' => $publicUrl,
+            'name' => $name,
+            'author' => $author,
+        ]);
 
-    //                 $headers = [
-    //                     'Content-Type' => 'audio/mpeg',
-    //                     'Content-Range' => "bytes $start-$end/$fileSize",
-    //                     'Accept-Ranges' => 'bytes',
-    //                     'Content-Length' => $length,
-    //                 ];
+        return $this->responseJsonSuccess('Episode added successfully');
 
-    //                 return response()->stream(
-    //                     function () use ($cachedFilePath, $start, $length) {
-    //                         $stream = fopen($cachedFilePath, 'rb');
-    //                         fseek($stream, $start);
-    //                         echo fread($stream, $length);
-    //                         fclose($stream);
-    //                     },
-    //                     206,
-    //                     $headers
-    //                 );
-    //             }
-    //         }
+    }
 
-    //         // Full audio streaming response
-    //         return response()->stream(
-    //             function () use ($cachedFilePath) {
-    //                 readfile($cachedFilePath);
-    //             },
-    //             200,
-    //             [
-    //                 'Content-Type' => 'audio/mpeg',
-    //                 'Content-Length' => $fileSize,
-    //             ]
-    //         );
+    public function streamEpisodeFromTheStorage(Request $request, Episode $episode)
+    {
+        try {
+            // Check authentication using token in headers or signed URL
+            if (!$this->isAuthorized($request, $episode)) {
+                return $this->responseJsonError("Oops, this episode is not publicly available or the given signed URL is not valid", null, 401);
+            }
 
-    //     } catch (\Exception $ex) {
-    //         return $this->responseJsonError('Something went wrong, please try again later', $ex);
-    //     }
-    // }
+            // Call analytics service to log the request
+            $this->logAnalytics($episode, $request->ip());
+
+            // Check if the file exists in the local cache
+            $cachedFilePath = storage_path('app/episode_' . $episode->id);
+
+            if (!Storage::disk('local')->exists($cachedFilePath)) {
+                // Download the file from storage and cache it locally
+                $fileStream = Storage::disk('local')->get($episode->mp3_url);
+                Storage::disk('local')->put($cachedFilePath, $fileStream);
+            }
+
+            $fileSize = Storage::disk('local')->size($cachedFilePath);
+
+            // Check if the request is for partial content
+            $range = $request->headers->get('Range');
+            if ($range) {
+                list($start, $end) = explode('-', substr($range, 6), 2);
+
+                $start = intval($start);
+                $end = $end ? intval($end) : $fileSize - 1;
+
+                if ($start >= 0 && $start <= $end && $end < $fileSize) {
+                    $length = ($end - $start) + 1;
+
+                    $headers = [
+                        'Content-Type' => 'audio/mpeg',
+                        'Content-Range' => "bytes $start-$end/$fileSize",
+                        'Accept-Ranges' => 'bytes',
+                        'Content-Length' => $length,
+                    ];
+
+                    return response()->stream(
+                        function () use ($cachedFilePath, $start, $length) {
+                            $stream = fopen($cachedFilePath, 'rb');
+                            fseek($stream, $start);
+                            echo fread($stream, $length);
+                            fclose($stream);
+                        },
+                        206,
+                        $headers
+                    );
+                }
+            }
+
+            // Full audio streaming response
+            return response()->stream(
+                function () use ($cachedFilePath) {
+                    readfile($cachedFilePath);
+                },
+                200,
+                [
+                    'Content-Type' => 'audio/mpeg',
+                    'Content-Length' => $fileSize,
+                ]
+            );
+
+        } catch (\Exception $ex) {
+            return $this->responseJsonError('Something went wrong, please try again later', $ex);
+        }
+    }
 
 }

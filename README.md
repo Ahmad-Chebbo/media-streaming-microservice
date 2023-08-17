@@ -65,7 +65,7 @@ Before running this project, ensure that you have the following installed:
 Clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/Ahmad-Chebbo/shopping-basket.git
+git clone https://github.com/Ahmad-Chebbo/media-streaming-microservice.git
 ```
 
 Install the PHP dependencies:
@@ -73,10 +73,6 @@ Install the PHP dependencies:
 composer install
 ```
 
-Install the NPM packages:
-```bash
-npm install
-```
 
 Copy the .env.example file to a new file called .env:
 ```bash
@@ -95,7 +91,24 @@ Update the .env file with your database credentials.
 
 
 ```bash
-php artisan migrate --seed
+php artisan migrate
+```
+
+
+## Testing:
+
+To run the tests, run the following command <br>
+Note the test will refresh the database records
+
+```bash
+php artisan test
+```
+
+
+## Run the seed:
+
+```bash
+php artisan db:seed
 ```
 
 ## Running the application
@@ -106,48 +119,27 @@ To start the development server, run the following command:
 php artisan serve
 ```  
 
-And run the node development by running the followin command:
-
-```bash
-npm run dev
-```
-
 Then visit http://localhost:8000 to view the application.
 
-Testing
-To run the tests, run the following command:
+## Running the queue
+
+Some functionalities such as logging analytics require running the queue, but don't forget to run the Analytics service and change the **ANALYTIC_SERVICE_MICROSERVICE_URL** parameter in the .env file to match the analytics service URL.
 
 ```bash
-php artisan test
-```
+php artisan queue:work
+```  
 
-This should run the tests and display the results.
-I have created one test unit called CartTest that contains 3 functions
-
-* Add item to basket
-* Get the basket items
-* Remove item from the basket
 
 <br>
 
-# Usage
-
-* Access the application in your web browser at http://localhost:8000.
-
-* Use the following credentials to access the dashboard:
-
-    * Admin: admin@app.com, password: password
-    * Sales Team: sales@app.com, password: password
-* Add products to the shopping platform and test the shopping basket to ensure that the data on removed items is being captured correctly.
-* Use the data on removed items page that can be accessed from the control panel to provide targeted discounts to customers and improve sales.
-
 # NOTES
 
-During the development process of this project, I created additional backend functionalities such as a checkout process. Although these features are not used in the current version, you are welcome to review the code.
+During the development process of this project, I created additional backend functionalities such as:
 
-In addition, I created an event listener that moves basket and basket items from before login to after login in order to maintain user sessions. This functionality allows users to add items to their cart and remove them before logging in. However, it is currently not being utilized in the project.
+* **Storing Episode**: I created a code that downloadn& store the mp3 file from the given url to the local storage or save an mp3 file in case of having a file instead of an mp3 url in the given request. 
+* **Streaming Episode**: I created a controller method called streamEpisodeFromTheStorage that can be used in case of storing the episode in the local storage (like the previous point).
 
-
+Although these functionalities are not used in the current version, you are welcome to review the code.
 
 
 

@@ -25,7 +25,7 @@ class StoreEpisodeRequest extends FormRequest
     {
         return [
             'mp3_url' => ['nullable', 'required_without:mp3_file', 'string', 'url'],
-            // 'mp3_file' => ['nullable', 'required_without:mp3_url', 'file', 'mimetypes:audio/mpeg'],
+            'mp3_file' => ['nullable', 'required_without:mp3_url', 'file', 'mimetypes:audio/mpeg'],
             'name' => ['required', 'string', 'max:255'],
             'author' => ['required', 'string', 'max:255'],
         ];
